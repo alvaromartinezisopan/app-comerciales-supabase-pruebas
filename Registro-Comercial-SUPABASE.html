@@ -1124,6 +1124,15 @@
             await entrarConSesion(data.session);
         });
 
+        /* Enter en email/contrasena equivale a pulsar "Entrar" (ordenador).
+           El boton sigue igual; su propio disabled durante el login evita
+           dobles envios aunque se pulse Enter varias veces. */
+        ['loginEmail', 'loginPassword'].forEach((id) => {
+            document.getElementById(id).addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') { e.preventDefault(); document.getElementById('btnLogin').click(); }
+            });
+        });
+
         function mostrarSoloLectura(perfil) {
             const f = document.getElementById('salesForm');
             if (f) f.style.display = 'none';
