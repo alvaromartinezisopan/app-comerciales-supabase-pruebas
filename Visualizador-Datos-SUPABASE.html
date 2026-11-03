@@ -266,7 +266,7 @@
 
         .modal-overlay { display: none; position: fixed; top:0; left:0; right:0; bottom:0; background: rgba(15,23,42,0.4); justify-content: center; align-items: center; z-index: 1000; padding: 20px; }
         .modal-overlay.active { display: flex; }
-        #loginModal { backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
+        #loginModal, #bloqueoPanel { backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
         .modal-card { background: #fff; width: 100%; max-width: 500px; border-radius: 20px; padding:28px; display: flex; flex-direction: column; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); }
         .modal-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0; padding-bottom: 16px; margin-bottom: 20px;}
         .modal-section { margin-bottom: 20px; }
@@ -697,6 +697,15 @@
         </div>
     </div>
 
+
+    <div id="bloqueoPanel" class="modal-overlay">
+        <div class="modal-card" style="max-width: 420px; width: 90%; padding: 36px 32px; text-align: center;">
+            <h2 id="bloqueoTitulo" style="color: var(--isopan-blue); margin: 0 0 16px 0;">Acceso restringido</h2>
+            <p id="bloqueoTexto" style="color: var(--text-secondary, #64748b); margin: 0 0 30px 0; line-height: 1.7;">Este panel es solo para las personas autorizadas.<br>Tus ofertas las tienes en la app de Registro.</p>
+            <button type="button" id="btnBloqueoSalir" class="btn-action" style="width:100%; padding:13px; background:var(--isopan-blue); color:#fff; border:none; border-radius:10px; font-size:16px; cursor:pointer;">Cerrar sesi&oacute;n</button>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
         /* ================================================================
@@ -756,19 +765,30 @@
             });
         });
 
+        function mostrarBloqueo(texto) {
+            // Denegar por defecto: ante permiso ausente o fallo de lectura, el panel
+            // no se abre. NO cerramos la sesion: Registro y Visualizador la comparten
+            // en este dominio y el usuario debe poder seguir usando el Registro.
+            document.getElementById('loginModal').classList.remove('active');
+            document.getElementById('bloqueoTexto').innerHTML = texto;
+            document.getElementById('bloqueoPanel').classList.add('active');
+        }
+
         async function entrarConSesion(session) {
-            const { data: perfil, error } = await sb.from('perfiles').select('delegado, rol').eq('id', session.user.id).single();
+            const { data: perfil, error } = await sb.from('perfiles').select('delegado, rol, acceso_visualizador').eq('id', session.user.id).single();
             if (error || !perfil) {
-                await sb.auth.signOut();
-                const errorMsg = document.getElementById('loginErrorMsg');
-                errorMsg.textContent = 'Tu usuario no tiene perfil asignado. Habla con quien administra la app.';
-                errorMsg.style.display = 'block';
-                mostrarLogin();
+                mostrarBloqueo('No se ha podido comprobar tu acceso al panel.<br>Prueba a entrar de nuevo; si sigue fallando, habla con quien administra la app.');
+                return;
+            }
+            if (!perfil.acceso_visualizador) {
+                mostrarBloqueo('Este panel es solo para las personas autorizadas.<br>Tus ofertas las tienes en la app de Registro.');
                 return;
             }
             perfilActual = perfil;
             cargarDatos();
         }
+
+        document.getElementById('btnBloqueoSalir').addEventListener('click', cerrarSesion);
 
         async function cerrarSesion() {
             await sb.auth.signOut();
