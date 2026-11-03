@@ -49,7 +49,7 @@
         body.modal-open { overflow: hidden !important; }
 
         @media (prefers-reduced-motion: reduce) {
-            .fab-menu-opts, .fab-menu-opt, .fab-menu-btn svg, .columnas-panel, #historyModal .filter-panel { transition: none !important; }
+            .fab-menu-opts, .fab-menu-opt, .fab-menu-btn .fab-ln, .columnas-panel, #historyModal .filter-panel { transition: none !important; }
         }
         @keyframes slideUpFade {
             0% { opacity: 0; transform: translateY(30px) scale(0.98); }
@@ -486,10 +486,13 @@
         .fab-menu.open .fab-menu-opts { opacity: 1; visibility: visible; transform: translateY(0) scale(1); pointer-events: auto;
             transition: opacity .18s ease, transform .18s ease; }
         .fab-menu-opt { display: inline-flex; align-items: center; gap: 8px; background: #fff; color: #1e293b; border: none; border-radius: 24px; padding: 11px 18px; font-size: 14px; font-weight: 600; box-shadow: 0 4px 16px rgba(0,0,0,.25); cursor: pointer; font-family: inherit; white-space: nowrap; }
-        .fab-menu-opt.salir { color: #475569; }
+        .fab-menu-opt.salir { color: #b91c1c; }
         .fab-menu-btn { width: 46px; height: 46px; border-radius: 50%; background: var(--isopan-blue); color: #fff; border: none; cursor: pointer; box-shadow: 0 4px 14px rgba(30,58,95,.5); display: flex; align-items: center; justify-content: center; margin-left: auto; }
-        .fab-menu-btn svg { width: 20px; height: 20px; transition: transform .18s ease; }
-        .fab-menu.open .fab-menu-btn svg { transform: rotate(90deg); }
+        .fab-menu-btn { flex-direction: column; gap: 4.5px; }
+        .fab-menu-btn .fab-ln { display: block; width: 20px; height: 2.2px; border-radius: 2px; background: currentColor; transition: transform .22s cubic-bezier(.4,0,.2,1), opacity .18s ease; }
+        .fab-menu.open .fab-menu-btn .fab-ln:nth-child(1) { transform: translateY(6.7px) rotate(45deg); }
+        .fab-menu.open .fab-menu-btn .fab-ln:nth-child(2) { opacity: 0; }
+        .fab-menu.open .fab-menu-btn .fab-ln:nth-child(3) { transform: translateY(-6.7px) rotate(-45deg); }
         .fab-menu-opt { opacity: 0; transform: translateY(6px); transition: opacity .16s ease, transform .16s ease, box-shadow .15s ease; }
         .fab-menu.open .fab-menu-opt { opacity: 1; transform: translateY(0); }
         .fab-menu.open .fab-menu-opt:nth-child(2) { transition-delay: .05s; }
@@ -663,7 +666,7 @@
             </button>
         </div>
         <button type="button" class="fab-menu-btn" id="btnMenuToggle" aria-label="Abrir menú">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h16"></path></svg>
+            <span class="fab-ln"></span><span class="fab-ln"></span><span class="fab-ln"></span>
         </button>
     </div>
 
@@ -1182,7 +1185,7 @@
         }
 
         const fabMenu = document.getElementById('fabMenu');
-        document.getElementById('btnMenuToggle').addEventListener('click', (e) => { e.stopPropagation(); fabMenu.classList.toggle('open'); });
+        document.getElementById('btnMenuToggle').addEventListener('click', (e) => { e.stopPropagation(); fabMenu.classList.toggle('open'); e.currentTarget.setAttribute('aria-label', fabMenu.classList.contains('open') ? 'Cerrar menú' : 'Abrir menú'); });
         document.addEventListener('click', (e) => { if (fabMenu.classList.contains('open') && !fabMenu.contains(e.target)) fabMenu.classList.remove('open'); });
         document.getElementById('btnMenuOfertas').addEventListener('click', () => { fabMenu.classList.remove('open'); document.getElementById('btnOpenPinModal').click(); });
         document.getElementById('btnMenuSalir').addEventListener('click', () => { fabMenu.classList.remove('open'); cerrarSesion(); });
