@@ -2398,8 +2398,10 @@ window.MANT = (() => {
     const est = data ? data.estado : "?";
     panel = document.createElement("div");
     panel.id = "mant-panel";
-    panel.style.cssText = "position:fixed;right:20px;bottom:96px;z-index:99999;background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:16px;box-shadow:0 12px 32px rgba(0,0,0,.18);width:250px;font-size:14px;color:#1e293b;";
-    panel.innerHTML = '<div style="font-weight:700;margin-bottom:12px;">Mantenimiento: <span style="text-transform:uppercase;">' + est + '</span></div>';
+    panel.style.cssText = "position:fixed;right:20px;top:20px;z-index:99999;background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:16px;box-shadow:0 12px 32px rgba(0,0,0,.18);width:250px;font-size:14px;color:#1e293b;";
+    const colores = { inactivo: ["#dcfce7", "#16a34a", "#166534"], aviso: ["#fef3c7", "#d97706", "#92400e"], activo: ["#fee2e2", "#dc2626", "#991b1b"] };
+    const cb = colores[est] || ["#f1f5f9", "#94a3b8", "#475569"];
+    panel.innerHTML = '<div style="font-weight:700;margin-bottom:12px;">Mantenimiento: <span style="text-transform:uppercase;display:inline-block;padding:3px 12px;border-radius:999px;font-size:12px;font-weight:700;letter-spacing:.03em;background:' + cb[0] + ';border:1.5px solid ' + cb[1] + ';color:' + cb[2] + ';">' + est + '</span></div>';
     const mk = (txt, fn) => {
       const b = document.createElement("button");
       b.type = "button";
