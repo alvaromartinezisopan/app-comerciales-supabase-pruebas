@@ -1145,10 +1145,11 @@
             }
             if (error || !perfil) {
                 await sb.auth.signOut();
+                // v2.8: mostrar el login ANTES del aviso; mostrarLogin() oculta los mensajes y se lo tragaba.
+                mostrarLogin();
                 const errorMsg = document.getElementById('loginErrorMsg');
                 errorMsg.textContent = 'Tu usuario no tiene perfil asignado. Habla con quien administra la app.';
                 errorMsg.style.display = 'block';
-                mostrarLogin();
                 return;
             }
             perfilActual = perfil;
