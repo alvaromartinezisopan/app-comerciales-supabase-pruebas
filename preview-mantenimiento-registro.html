@@ -2380,7 +2380,7 @@ window.MANT = (() => {
 
   /* --- Conmutador solo para la cuenta de Álvaro (Registro) --- */
   function montarSwitchAdmin() {
-    const menu = document.getElementById("fabMenu");
+    const menu = document.querySelector("#fabMenu .fab-menu-opts") || document.getElementById("fabMenu");
     if (!menu) return;
     const btn = document.createElement("button");
     btn.type = "button";
