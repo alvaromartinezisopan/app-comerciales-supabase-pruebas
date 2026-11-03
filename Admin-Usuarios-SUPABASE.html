@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Usuarios y permisos - PRUEBAS</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*{box-sizing:border-box;margin:0}
+body{font:15px/1.5 Arial,sans-serif;color:#1e293b;background:#f1f5f9;min-height:100vh}
+main{max-width:1000px;margin:26px auto;padding:26px;background:#fff;border-radius:22px;box-shadow:0 10px 35px #0f172a0c}
+header{display:flex;justify-content:space-between;align-items:center;gap:16px;border-bottom:1px solid #e2e8f0;padding-bottom:18px}
+header img{width:160px}
+h1{font-size:26px;margin:20px 0 3px;color:#005eb8}
+h2{font-size:19px;margin:0 0 14px}
+.small{font-size:13px;color:#64748b}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:28px;margin-top:20px}
+.box{border:1px solid #e2e8f0;border-radius:15px;padding:20px}
+label{display:block;font-size:13px;font-weight:600;margin:12px 0 6px}
+.field,input[type=text],input[type=email],input[type=password],select{width:100%;border:1px solid #cbd5e1;padding:11px 13px;border-radius:9px;color:#334155;min-height:44px;font:15px Arial;background:#fff}
+button{font:600 14px Arial;border:1px solid #cbd5e1;background:white;border-radius:10px;padding:12px 18px;color:#334155;cursor:pointer;min-height:44px}
+.primary{color:#fff;background:#005eb8;border-color:#005eb8}
+.row{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:12px 0;border-bottom:1px solid #edf2f7}
+.note{padding:13px 15px;background:#eff6ff;color:#1e40af;border-radius:10px;font-size:13px;margin:16px 0}
+.switch{min-width:38px;width:38px;height:22px;border-radius:20px;background:#cbd5e1;position:relative;display:inline-block;border:none;padding:0;min-height:22px;cursor:pointer}
+.switch:after{content:'';position:absolute;width:16px;height:16px;top:3px;left:3px;background:#fff;border-radius:50%;transition:left .15s}
+.switch.on{background:#005eb8}
+.switch.on:after{left:19px}
+.overlay{position:fixed;inset:0;background:#64748b99;display:none;align-items:center;justify-content:center;padding:18px;z-index:50}
+.overlay.active{display:flex}
+.card{background:#fff;border-radius:18px;padding:26px;max-width:380px;width:100%;box-shadow:0 18px 50px #0f172a33}
+.card h2{color:#005eb8;text-align:center}
+.error{background:#fef2f2;color:#b91c1c;border-radius:9px;padding:10px 13px;font-size:13px;margin-top:12px;display:none}
+.okmsg{background:#ecfdf5;color:#047857;border-radius:9px;padding:10px 13px;font-size:13px;margin-top:12px;display:none}
+.actions{margin-top:20px;display:flex;gap:10px;flex-wrap:wrap}
+.hist{font-size:13px;color:#475569;padding:9px 0;border-bottom:1px solid #edf2f7}
+.hist time{color:#94a3b8;font-size:12px;display:block}
+footer{font-size:12px;color:#64748b;margin-top:24px;padding-top:14px;border-top:1px solid #e2e8f0}
+@media(max-width:600px){main{margin:0;padding:20px;border-radius:0}.grid{grid-template-columns:1fr;gap:18px}header img{width:125px}h1{font-size:24px}}
+</style>
+</head>
+<body>
+
+<!-- Acceso -->
+<div class="overlay active" id="loginOverlay">
+  <div class="card">
+    <h2>Acceso</h2>
+    <p class="small" style="text-align:center;margin:8px 0 16px">Inicia sesión para administrar usuarios.</p>
+    <label for="loginEmail">Email</label>
+    <input type="email" id="loginEmail" placeholder="tu@email.com" autocomplete="username">
+    <label for="loginPass">Contraseña</label>
+    <input type="password" id="loginPass" placeholder="········" autocomplete="current-password">
+    <div class="error" id="loginError"></div>
+    <div class="actions"><button class="primary" id="btnEntrar" style="width:100%">Entrar</button></div>
+  </div>
+</div>
+
+<!-- Sin permiso -->
+<div class="overlay" id="bloqueoOverlay">
+  <div class="card">
+    <h2>Acceso restringido</h2>
+    <p class="small" style="margin:8px 0 16px">Esta pantalla es solo para quien administra la app.</p>
+    <div class="actions"><button class="primary" id="btnSalirBloqueo" style="width:100%">Cerrar sesión</button></div>
+  </div>
+</div>
+
+<!-- Revisar invitación -->
+<div class="overlay" id="revisionOverlay">
+  <div class="card">
+    <h2>Revisar invitación</h2>
+    <div id="revisionDetalle" style="margin:14px 0;font-size:14px"></div>
+    <p class="small">Se enviará un correo real a esa dirección para que elija su contraseña.</p>
+    <div class="error" id="revisionError"></div>
+    <div class="actions">
+      <button id="btnVolverForm">Volver</button>
+      <button class="primary" id="btnEnviarInvitacion">Enviar invitación</button>
+    </div>
+  </div>
+</div>
+
+<main id="panel" style="display:none">
+  <header>
+    <img src="https://raw.githubusercontent.com/alvaromartinezisopan/app-calculadora-envios/refs/heads/main/logo2.png" alt="Logo Isopan">
+    <button id="btnSalir">Salir</button>
+  </header>
+  <h1>Usuarios y permisos</h1>
+  <p class="small">Dar de alta a un delegado o jefe y preparar su acceso.</p>
+
+  <div class="grid">
+    <div class="box">
+      <h2>Invitar usuario</h2>
+      <label for="fNombre">Nombre</label>
+      <input type="text" id="fNombre" placeholder="Nombre y apellidos" maxlength="80">
+      <label for="fEmail">Correo de acceso</label>
+      <input type="email" id="fEmail" placeholder="correo@ejemplo.com">
+      <label for="fTipo">Tipo de usuario</label>
+      <select id="fTipo">
+        <option value="comercial">Delegado comercial</option>
+        <option value="jefe">Jefe</option>
+      </select>
+      <div class="note">Recibirá un correo para elegir su contraseña. Tú no tendrás que conocerla.</div>
+    </div>
+    <div class="box">
+      <h2>Permisos</h2>
+      <div class="row"><span>Registrar y editar sus ofertas</span><button class="switch on" id="swEditar" aria-label="Registrar y editar sus ofertas"></button></div>
+      <div class="row"><span>Acceso al Visualizador</span><button class="switch" id="swVisualizador" aria-label="Acceso al Visualizador"></button></div>
+      <div class="row"><span>Administrar usuarios</span><span class="small">Solo tú</span></div>
+      <p class="small" style="margin-top:14px">Para un jefe elige los permisos necesarios. Ver todas las ofertas no da acceso a administrar usuarios.</p>
+      <div class="actions"><button class="primary" id="btnRevisar">Revisar invitación</button></div>
+      <p class="small">Revisar destinatario y permisos antes de enviar el correo.</p>
+      <div class="okmsg" id="msgOk"></div>
+      <div class="error" id="msgError"></div>
+    </div>
+  </div>
+
+  <div class="box" style="margin-top:28px">
+    <h2>Registro de cambios</h2>
+    <div id="historial"><p class="small">Todavía no hay movimientos.</p></div>
+  </div>
+
+  <footer>Solo visible para el administrador. Las invitaciones envían un correo real para que cada persona elija su contraseña.</footer>
+</main>
+
+<script>
+const SUPABASE_URL = 'https://icskyhvpbgeaeacjvjro.supabase.co'
+const SUPABASE_ANON_KEY = 'sb_publishable_EXdc154xOx3l3RX-_4vw6A_nFXN4qIQ'
+const CORPORATE_UID = '319d70f7-a934-42d6-88a3-55baded7c5ca'
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+
+const $ = (id) => document.getElementById(id)
+const mostrarError = (el, msg) => { el.textContent = msg; el.style.display = msg ? 'block' : 'none' }
+
+async function entrarConSesion(session) {
+  if (!session) { $('loginOverlay').classList.add('active'); return }
+  if (session.user.id !== CORPORATE_UID) {
+    $('loginOverlay').classList.remove('active')
+    $('bloqueoOverlay').classList.add('active')
+    return
+  }
+  $('loginOverlay').classList.remove('active')
+  $('bloqueoOverlay').classList.remove('active')
+  $('panel').style.display = 'block'
+  cargarHistorial()
+}
+
+$('btnEntrar').addEventListener('click', async () => {
+  mostrarError($('loginError'), '')
+  $('btnEntrar').disabled = true
+  const { data, error } = await sb.auth.signInWithPassword({ email: $('loginEmail').value.trim(), password: $('loginPass').value })
+  $('btnEntrar').disabled = false
+  if (error) { mostrarError($('loginError'), 'Email o contraseña incorrectos.'); return }
+  entrarConSesion(data.session)
+})
+$('loginPass').addEventListener('keydown', (e) => { if (e.key === 'Enter') $('btnEntrar').click() })
+
+async function salir() { await sb.auth.signOut(); location.reload() }
+$('btnSalir').addEventListener('click', salir)
+$('btnSalirBloqueo').addEventListener('click', salir)
+
+for (const id of ['swEditar', 'swVisualizador']) {
+  $(id).addEventListener('click', () => $(id).classList.toggle('on'))
+}
+
+function datosFormulario() {
+  return {
+    nombre: $('fNombre').value.trim(),
+    email: $('fEmail').value.trim().toLowerCase(),
+    rol: $('fTipo').value,
+    solo_lectura: !$('swEditar').classList.contains('on'),
+    acceso_visualizador: $('swVisualizador').classList.contains('on'),
+  }
+}
+
+$('btnRevisar').addEventListener('click', () => {
+  mostrarError($('msgError'), '')
+  const d = datosFormulario()
+  if (d.nombre.length < 2) { mostrarError($('msgError'), 'Escribe el nombre.'); return }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(d.email)) { mostrarError($('msgError'), 'El correo no parece válido.'); return }
+  $('revisionDetalle').innerHTML =
+    '<p><strong>Nombre:</strong> ' + escapeHtml(d.nombre) + '</p>' +
+    '<p><strong>Correo:</strong> ' + escapeHtml(d.email) + '</p>' +
+    '<p><strong>Tipo:</strong> ' + (d.rol === 'jefe' ? 'Jefe' : 'Delegado comercial') + '</p>' +
+    '<p><strong>Registrar y editar sus ofertas:</strong> ' + (d.solo_lectura ? 'No' : 'Sí') + '</p>' +
+    '<p><strong>Acceso al Visualizador:</strong> ' + (d.acceso_visualizador ? 'Sí' : 'No') + '</p>'
+  mostrarError($('revisionError'), '')
+  $('revisionOverlay').classList.add('active')
+})
+$('btnVolverForm').addEventListener('click', () => $('revisionOverlay').classList.remove('active'))
+
+function escapeHtml(s) { return s.replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])) }
+
+$('btnEnviarInvitacion').addEventListener('click', async () => {
+  mostrarError($('revisionError'), '')
+  $('btnEnviarInvitacion').disabled = true
+  try {
+    const d = datosFormulario()
+    const { data, error } = await sb.functions.invoke('admin-usuarios', { body: { accion: 'invitar', ...d } })
+    if (error) {
+      let msg = 'No se pudo enviar la invitación.'
+      try { const j = await error.context.json(); if (j.error) msg = j.error } catch (e) {}
+      mostrarError($('revisionError'), msg)
+      return
+    }
+    if (data && data.error) { mostrarError($('revisionError'), data.error); return }
+    $('revisionOverlay').classList.remove('active')
+    $('fNombre').value = ''; $('fEmail').value = ''
+    $('msgOk').textContent = (data && data.mensaje) || 'Invitación enviada.'
+    $('msgOk').style.display = 'block'
+    cargarHistorial()
+  } finally {
+    $('btnEnviarInvitacion').disabled = false
+  }
+})
+
+async function cargarHistorial() {
+  try {
+    const { data, error } = await sb.functions.invoke('admin-usuarios', { body: { accion: 'historial' } })
+    if (error || !data || !data.historial) return
+    const h = data.historial
+    if (!h.length) { $('historial').innerHTML = '<p class="small">Todavía no hay movimientos.</p>'; return }
+    $('historial').innerHTML = h.map((r) => {
+      const f = new Date(r.creado_en).toLocaleString('es-ES')
+      let detalle = ''
+      if (r.accion === 'invitar' && r.despues) {
+        detalle = 'Invitación enviada a <strong>' + escapeHtml(r.usuario_email || '') + '</strong> (' +
+          (r.despues.rol === 'jefe' ? 'Jefe' : 'Delegado comercial') + ', ' + escapeHtml(r.despues.delegado || '') + ')'
+      } else {
+        detalle = escapeHtml(r.accion)
+      }
+      return '<div class="hist">' + detalle + '<time>' + f + '</time></div>'
+    }).join('')
+  } catch (e) {}
+}
+
+sb.auth.getSession().then(({ data }) => entrarConSesion(data.session))
+sb.auth.onAuthStateChange((_e, session) => { if (!session) $('loginOverlay').classList.add('active') })
+</script>
+</body>
+</html>
