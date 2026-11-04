@@ -1199,6 +1199,7 @@
             document.getElementById('histTitulo').textContent = etq;
             document.querySelector('#btnOpenPinModal .main-fab-text').textContent = etq;
             document.getElementById('btnOpenPinModal').title = 'Ver ' + (perfil.rol === 'jefe' ? 'todas las ofertas' : 'mis ofertas');
+            montarAccesoUsuarios(session.user.id);
             if (perfil.solo_lectura) { mostrarSoloLectura(perfil); await MANT.init(session.user.id, { adminSwitch: true }); return; }
             // El formulario registra siempre a nombre del usuario conectado
             delegadoSelect.innerHTML = '';
@@ -1214,6 +1215,20 @@
         document.addEventListener('click', (e) => { if (fabMenu.classList.contains('open') && !fabMenu.contains(e.target)) fabMenu.classList.remove('open'); });
         document.getElementById('btnMenuOfertas').addEventListener('click', () => { fabMenu.classList.remove('open'); document.getElementById('btnOpenPinModal').click(); });
         document.getElementById('btnMenuSalir').addEventListener('click', () => { fabMenu.classList.remove('open'); cerrarSesion(); });
+
+        /* Acceso a «Usuarios y permisos»: solo la cuenta corporativa ve la opcion en el menu; lleva a la pagina Admin */
+        function montarAccesoUsuarios(userId) {
+            if (userId !== '319d70f7-a934-42d6-88a3-55baded7c5ca') return;
+            const menu = document.querySelector('#fabMenu .fab-menu-opts');
+            if (!menu || document.getElementById('btnMenuUsuarios')) return;
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'fab-menu-opt';
+            btn.id = 'btnMenuUsuarios';
+            btn.innerHTML = '<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg><span class="nav-label">Usuarios y permisos</span>';
+            btn.addEventListener('click', () => { location.href = 'Admin-Usuarios-SUPABASE.html'; });
+            menu.insertBefore(btn, document.getElementById('btnMenuOfertas'));
+        }
 
         async function cerrarSesion() {
             if (window.matchMedia('(max-width: 768px)').matches && !confirm('¿Cerrar sesión?')) return;
