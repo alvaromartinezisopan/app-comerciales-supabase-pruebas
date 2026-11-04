@@ -68,13 +68,16 @@ const mostrar = (id) => { ['vistaForm','vistaInvalido','vistaOk'].forEach(v => $
 const mostrarError = (msg) => { $('msgError').textContent = msg; $('msgError').style.display = msg ? 'block' : 'none' }
 
 async function iniciar() {
-  // Flujo PKCE: el enlace trae ?code=... ; flujo implicit: #access_token=... (lo procesa solo el cliente)
+  // Solo un aterrizaje desde correo (invitacion o recuperacion) abre el
+  // formulario: ?code=... (PKCE) o #access_token=... (implicit, type=invite
+  // o type=recovery). Una sesion normal ya iniciada NO lo abre.
   const code = new URLSearchParams(location.search).get('code')
+  const vieneDeCorreo = !!code || location.hash.indexOf('access_token=') !== -1
+  if (!vieneDeCorreo) { mostrar('vistaInvalido'); return }
   if (code) {
     const { error } = await sb.auth.exchangeCodeForSession(code)
     if (error) { mostrar('vistaInvalido'); return }
   }
-  // Esperar a que el cliente procese el hash (type=invite o type=recovery)
   const { data } = await sb.auth.getSession()
   if (data && data.session) mostrar('vistaForm')
   else mostrar('vistaInvalido')
