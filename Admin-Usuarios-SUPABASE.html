@@ -188,6 +188,7 @@ $('btnRevisar').addEventListener('click', () => {
     '<p><strong>Acceso al Visualizador:</strong> ' + (d.acceso_visualizador ? 'Sí' : 'No') + '</p>'
   mostrarError($('revisionError'), '')
   $('btnReenviarInvitacion').style.display = 'none'
+  $('btnEnviarInvitacion').style.display = ''
   $('revisionOverlay').classList.add('active')
 })
 $('btnVolverForm').addEventListener('click', () => $('revisionOverlay').classList.remove('active'))
@@ -209,6 +210,7 @@ $('btnEnviarInvitacion').addEventListener('click', async () => {
       try { const j = await error.context.json(); if (j.error) msg = j.error; pendiente = j.pendiente === true } catch (e) {}
       mostrarError($('revisionError'), msg)
       $('btnReenviarInvitacion').style.display = pendiente ? '' : 'none'
+      if (pendiente) $('btnEnviarInvitacion').style.display = 'none'
       return
     }
     if (data && data.error) { mostrarError($('revisionError'), data.error); return }
