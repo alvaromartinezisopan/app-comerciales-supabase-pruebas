@@ -76,6 +76,7 @@ footer{font-size:12px;color:#64748b;margin-top:24px;padding-top:14px;border-top:
     <div class="error" id="revisionError"></div>
     <div class="actions">
       <button id="btnVolverForm">Volver</button>
+      <button class="primary" id="btnReenviarInvitacion" style="display:none">Reenviar invitación</button>
       <button class="primary" id="btnEnviarInvitacion">Enviar invitación</button>
     </div>
   </div>
@@ -186,6 +187,7 @@ $('btnRevisar').addEventListener('click', () => {
     '<p><strong>Registrar y editar sus ofertas:</strong> ' + (d.solo_lectura ? 'No' : 'Sí') + '</p>' +
     '<p><strong>Acceso al Visualizador:</strong> ' + (d.acceso_visualizador ? 'Sí' : 'No') + '</p>'
   mostrarError($('revisionError'), '')
+  $('btnReenviarInvitacion').style.display = 'none'
   $('revisionOverlay').classList.add('active')
 })
 $('btnVolverForm').addEventListener('click', () => $('revisionOverlay').classList.remove('active'))
@@ -203,8 +205,10 @@ $('btnEnviarInvitacion').addEventListener('click', async () => {
     const { data, error } = await sb.functions.invoke('admin-usuarios', { body: { accion: 'invitar', ...d } })
     if (error) {
       let msg = 'No se pudo enviar la invitación.'
-      try { const j = await error.context.json(); if (j.error) msg = j.error } catch (e) {}
+      let pendiente = false
+      try { const j = await error.context.json(); if (j.error) msg = j.error; pendiente = j.pendiente === true } catch (e) {}
       mostrarError($('revisionError'), msg)
+      $('btnReenviarInvitacion').style.display = pendiente ? '' : 'none'
       return
     }
     if (data && data.error) { mostrarError($('revisionError'), data.error); return }
@@ -217,6 +221,37 @@ $('btnEnviarInvitacion').addEventListener('click', async () => {
     $('btnEnviarInvitacion').disabled = false
     $('btnVolverForm').disabled = false
     $('btnEnviarInvitacion').innerHTML = etiquetaOriginal
+  }
+})
+
+$('btnReenviarInvitacion').addEventListener('click', async () => {
+  mostrarError($('revisionError'), '')
+  const btn = $('btnReenviarInvitacion')
+  btn.disabled = true
+  $('btnEnviarInvitacion').disabled = true
+  $('btnVolverForm').disabled = true
+  const etiquetaOriginal = btn.innerHTML
+  btn.innerHTML = '<span class="spinner"></span>Reenviando...'
+  try {
+    const d = datosFormulario()
+    const { data, error } = await sb.functions.invoke('admin-usuarios', { body: { accion: 'reenviar', email: d.email } })
+    if (error) {
+      let msg = 'No se pudo reenviar la invitación.'
+      try { const j = await error.context.json(); if (j.error) msg = j.error } catch (e) {}
+      mostrarError($('revisionError'), msg)
+      return
+    }
+    if (data && data.error) { mostrarError($('revisionError'), data.error); return }
+    $('revisionOverlay').classList.remove('active')
+    $('fNombre').value = ''; $('fEmail').value = ''
+    $('msgOk').textContent = (data && data.mensaje) || 'Invitación reenviada.'
+    $('msgOk').style.display = 'block'
+    cargarHistorial()
+  } finally {
+    btn.disabled = false
+    $('btnEnviarInvitacion').disabled = false
+    $('btnVolverForm').disabled = false
+    btn.innerHTML = etiquetaOriginal
   }
 })
 
