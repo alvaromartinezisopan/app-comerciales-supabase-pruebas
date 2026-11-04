@@ -545,6 +545,30 @@
             .fab-container { display: none; }
             .fab-menu { display: block; }
         }
+
+        /* ===== PORTATIL DE POCA ALTURA: filtros plegables y modal compacto (solo #historyModal) ===== */
+        @media (min-width: 769px) and (max-height: 820px) {
+            #historyModal .btn-filtros-toggle { display: inline-flex; position: relative; }
+            #historyModal .badge-filtros { display: none; position: absolute; top: -7px; right: -7px; background: var(--isopan-blue); color: #fff; border-radius: 999px; font-size: 10px; font-weight: 700; min-width: 16px; height: 16px; line-height: 16px; text-align: center; padding: 0 4px; border: 2px solid #fff; box-sizing: content-box; }
+            #historyModal .badge-filtros.visible { display: inline-block; }
+            #historyModal .history-header { margin-bottom: 8px; padding-bottom: 8px; }
+            #historyModal .filter-panel {
+                position: absolute; left: 20px; right: 20px; z-index: 70; margin-bottom: 0;
+                background: #ffffff; border: 1px solid #cbd5e1; border-radius: 14px;
+                box-shadow: 0 18px 44px -12px rgba(0, 40, 85, 0.28); padding: 14px;
+                max-height: 62vh; overflow-y: auto;
+                opacity: 0; visibility: hidden; transform: translateY(8px); pointer-events: none;
+                transition: opacity .2s ease, transform .2s ease, visibility 0s linear .2s;
+            }
+            #historyModal .filter-panel.abierto { opacity: 1; visibility: visible; transform: translateY(0); pointer-events: auto;
+                transition: opacity .2s ease, transform .2s ease; }
+            #historyModal .hist-resumen { flex-wrap: nowrap; overflow-x: auto; gap: 6px; margin-bottom: 6px; padding-bottom: 2px; -webkit-overflow-scrolling: touch; }
+            #historyModal .hist-stat { flex: 1; min-width: 78px; padding: 6px 8px; border-radius: 10px; }
+            #historyModal .hist-stat .hs-valor { font-size: 15px; }
+            #historyModal .hist-stat .hs-label { font-size: 9px; }
+            #historyModal.history-modal { padding: 20px 24px; height: 94vh; }
+            #historyModal .paginacion-bar { margin-top: 8px; padding-top: 8px; }
+        }
     </style>
 </head>
 <body>
