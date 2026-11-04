@@ -39,6 +39,18 @@ button:disabled{opacity:.55;cursor:default}
 .hist{font-size:13px;color:#475569;padding:9px 0;border-bottom:1px solid #edf2f7}
 .hist time{color:#94a3b8;font-size:12px;display:block}
 footer{font-size:12px;color:#64748b;margin-top:24px;padding-top:14px;border-top:1px solid #e2e8f0}
+/* NUEVO: listado de usuarios */
+.user-row{display:flex;align-items:center;gap:14px;padding:14px 0;border-bottom:1px solid #edf2f7;flex-wrap:wrap}
+.user-row:last-of-type{border-bottom:none}
+.user-info{flex:1;min-width:200px}
+.user-info strong{display:block;font-size:15px}
+.user-mail{color:#64748b;font-size:13px}
+.user-perms{color:#475569;font-size:13px;margin-top:2px}
+.pill{display:inline-block;font-size:12px;font-weight:600;padding:4px 12px;border-radius:999px;white-space:nowrap}
+.pill.activo{background:#ecfdf5;color:#047857}
+.pill.pendiente{background:#fffbeb;color:#b45309}
+.btn-editar{padding:9px 16px;min-height:38px;font-size:13px}
+.correo-ficha{background:#f8fafc;border:1px solid #e2e8f0;border-radius:9px;padding:10px 13px;font-size:14px;color:#475569;margin-top:4px}
 @media(max-width:600px){main{margin:0;padding:20px;border-radius:0}.grid{grid-template-columns:1fr;gap:18px}header img{width:125px}h1{font-size:24px}}
 </style>
 </head>
@@ -82,6 +94,33 @@ footer{font-size:12px;color:#64748b;margin-top:24px;padding-top:14px;border-top:
   </div>
 </div>
 
+
+<!-- Editar usuario -->
+<div class="overlay" id="editarOverlay">
+  <div class="card">
+    <h2>Editar usuario</h2>
+    <label>Correo de acceso</label>
+    <div class="correo-ficha" id="eCorreo"></div>
+    <label>Nombre</label>
+    <div class="correo-ficha" id="eNombre"></div>
+    <p class="small" style="margin-top:4px">El nombre liga las ofertas y los clientes de esta persona; cambiarlo es una operación aparte.</p>
+    <label for="eTipo">Tipo de usuario</label>
+    <select id="eTipo">
+      <option value="comercial">Delegado comercial</option>
+      <option value="jefe">Jefe</option>
+    </select>
+    <div class="row"><span>Registrar y editar sus ofertas</span><button class="switch" id="swEEditar" aria-label="Registrar y editar sus ofertas"></button></div>
+    <div class="row"><span>Acceso al Visualizador</span><button class="switch" id="swEVisualizador" aria-label="Acceso al Visualizador"></button></div>
+    <div class="row"><span>Administrar usuarios</span><span class="small">Solo tú</span></div>
+    <div class="note">No se envía ningún correo. Los cambios se aplican al guardar y quedan anotados en el registro.</div>
+    <div class="error" id="editarError"></div>
+    <div class="actions">
+      <button id="btnVolverLista">Volver</button>
+      <button class="primary" id="btnGuardarCambios">Guardar cambios</button>
+    </div>
+  </div>
+</div>
+
 <main id="panel" style="display:none">
   <header>
     <img src="https://raw.githubusercontent.com/alvaromartinezisopan/app-calculadora-envios/refs/heads/main/logo2.png" alt="Logo Isopan">
@@ -89,6 +128,14 @@ footer{font-size:12px;color:#64748b;margin-top:24px;padding-top:14px;border-top:
   </header>
   <h1>Usuarios y permisos</h1>
   <p class="small">Dar de alta a un delegado o jefe y preparar su acceso.</p>
+
+  <div class="box" style="margin-top:20px">
+    <h2>Usuarios</h2>
+    <div id="listaUsuarios"><p class="small">Cargando usuarios...</p></div>
+    <p class="small" style="margin-top:12px">Para reenviar una invitación pendiente, escribe el mismo correo en «Invitar usuario». Editar no envía correos.</p>
+    <div class="okmsg" id="msgOkLista"></div>
+  </div>
+
 
   <div class="grid">
     <div class="box">
@@ -145,6 +192,7 @@ async function entrarConSesion(session) {
   $('bloqueoOverlay').classList.remove('active')
   $('panel').style.display = 'block'
   cargarHistorial()
+  cargarUsuarios()
 }
 
 $('btnEntrar').addEventListener('click', async () => {
@@ -219,6 +267,7 @@ $('btnEnviarInvitacion').addEventListener('click', async () => {
     $('msgOk').textContent = (data && data.mensaje) || 'Invitación enviada.'
     $('msgOk').style.display = 'block'
     cargarHistorial()
+    cargarUsuarios()
   } finally {
     $('btnEnviarInvitacion').disabled = false
     $('btnVolverForm').disabled = false
@@ -249,6 +298,7 @@ $('btnReenviarInvitacion').addEventListener('click', async () => {
     $('msgOk').textContent = (data && data.mensaje) || 'Invitación reenviada.'
     $('msgOk').style.display = 'block'
     cargarHistorial()
+    cargarUsuarios()
   } finally {
     btn.disabled = false
     $('btnEnviarInvitacion').disabled = false
@@ -269,6 +319,13 @@ async function cargarHistorial() {
       if (r.accion === 'invitar' && r.despues) {
         detalle = 'Invitación enviada a <strong>' + escapeHtml(r.usuario_email || '') + '</strong> (' +
           (r.despues.rol === 'jefe' ? 'Jefe' : 'Delegado comercial') + ', ' + escapeHtml(r.despues.delegado || '') + ')'
+      } else if (r.accion === 'reenviar') {
+        detalle = 'Invitación reenviada a <strong>' + escapeHtml(r.usuario_email || '') + '</strong>'
+      } else if (r.accion === 'actualizar' && r.despues) {
+        detalle = 'Permisos actualizados: <strong>' + escapeHtml(r.usuario_email || '') + '</strong> (' +
+          (r.despues.rol === 'jefe' ? 'Jefe' : 'Delegado comercial') +
+          ', registrar y editar: ' + (r.despues.solo_lectura ? 'No' : 'Sí') +
+          ', Visualizador: ' + (r.despues.acceso_visualizador ? 'Sí' : 'No') + ')'
       } else {
         detalle = escapeHtml(r.accion)
       }
@@ -276,6 +333,98 @@ async function cargarHistorial() {
     }).join('')
   } catch (e) {}
 }
+
+
+/* ===== Listado y edicion de usuarios ===== */
+let usuariosActuales = []
+let usuarioEditando = null
+
+async function cargarUsuarios() {
+  const cont = $('listaUsuarios')
+  cont.innerHTML = '<p class="small">Cargando usuarios...</p>'
+  try {
+    const { data, error } = await sb.functions.invoke('admin-usuarios', { body: { accion: 'listar' } })
+    if (error) {
+      let msg = 'No se pudo cargar la lista de usuarios.'
+      try { const j = await error.context.json(); if (j.error) msg = j.error } catch (e) {}
+      cont.innerHTML = '<p class="small">' + escapeHtml(msg) + '</p>'
+      return
+    }
+    usuariosActuales = (data && data.usuarios) || []
+    if (!usuariosActuales.length) { cont.innerHTML = '<p class="small">Todavía no hay usuarios invitados.</p>'; return }
+    cont.innerHTML = usuariosActuales.map((u) => {
+      const tipo = u.rol === 'jefe' ? 'Jefe' : 'Delegado comercial'
+      const permisos = u.tiene_ficha
+        ? tipo + ' · Registrar y editar: ' + (u.solo_lectura ? 'No' : 'Sí') + ' · Visualizador: ' + (u.acceso_visualizador ? 'Sí' : 'No')
+        : 'Sin ficha de permisos'
+      const pill = u.estado === 'activo'
+        ? '<span class="pill activo">Activo</span>'
+        : '<span class="pill pendiente">Invitación pendiente</span>'
+      const boton = u.tiene_ficha ? '<button class="btn-editar" data-uid="' + u.uid + '">Editar</button>' : ''
+      return '<div class="user-row"><div class="user-info"><strong>' + escapeHtml(u.delegado || u.email) + '</strong>' +
+        '<span class="user-mail">' + escapeHtml(u.email) + '</span>' +
+        '<div class="user-perms">' + escapeHtml(permisos) + '</div></div>' + pill + boton + '</div>'
+    }).join('')
+    cont.querySelectorAll('.btn-editar').forEach((b) => b.addEventListener('click', () => abrirEdicion(b.dataset.uid)))
+  } catch (e) {
+    cont.innerHTML = '<p class="small">No se pudo cargar la lista de usuarios.</p>'
+  }
+}
+
+function abrirEdicion(uid) {
+  const u = usuariosActuales.find((x) => x.uid === uid)
+  if (!u || !u.tiene_ficha) return
+  usuarioEditando = u
+  $('eCorreo').textContent = u.email
+  $('eNombre').textContent = u.delegado || ''
+  $('eTipo').value = u.rol === 'jefe' ? 'jefe' : 'comercial'
+  $('swEEditar').classList.toggle('on', !u.solo_lectura)
+  $('swEVisualizador').classList.toggle('on', !!u.acceso_visualizador)
+  mostrarError($('editarError'), '')
+  $('editarOverlay').classList.add('active')
+}
+$('btnVolverLista').addEventListener('click', () => $('editarOverlay').classList.remove('active'))
+for (const id of ['swEEditar', 'swEVisualizador']) {
+  $(id).addEventListener('click', () => $(id).classList.toggle('on'))
+}
+
+$('btnGuardarCambios').addEventListener('click', async () => {
+  if (!usuarioEditando) return
+  mostrarError($('editarError'), '')
+  const btn = $('btnGuardarCambios')
+  btn.disabled = true
+  $('btnVolverLista').disabled = true
+  const etiquetaOriginal = btn.innerHTML
+  btn.innerHTML = '<span class="spinner"></span>Guardando...'
+  try {
+    const { data, error } = await sb.functions.invoke('admin-usuarios', {
+      body: {
+        accion: 'actualizar',
+        usuario_uid: usuarioEditando.uid,
+        rol: $('eTipo').value,
+        solo_lectura: !$('swEEditar').classList.contains('on'),
+        acceso_visualizador: $('swEVisualizador').classList.contains('on'),
+      }
+    })
+    if (error) {
+      let msg = 'No se pudieron guardar los cambios.'
+      try { const j = await error.context.json(); if (j.error) msg = j.error } catch (e) {}
+      mostrarError($('editarError'), msg)
+      return
+    }
+    if (data && data.error) { mostrarError($('editarError'), data.error); return }
+    $('editarOverlay').classList.remove('active')
+    const aviso = $('msgOkLista')
+    aviso.textContent = (data && data.mensaje) || 'Cambios guardados.'
+    aviso.style.display = 'block'
+    cargarUsuarios()
+    cargarHistorial()
+  } finally {
+    btn.disabled = false
+    $('btnVolverLista').disabled = false
+    btn.innerHTML = etiquetaOriginal
+  }
+})
 
 sb.auth.getSession().then(({ data }) => entrarConSesion(data.session))
 sb.auth.onAuthStateChange((_e, session) => { if (!session) $('loginOverlay').classList.add('active') })
